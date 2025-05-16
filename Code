@@ -1,0 +1,31 @@
+WITH top_companies AS (
+	SELECT industry,  COUNT(i.company_id) AS num_companies
+	FROM industries AS i
+	LEFT JOIN dates as d
+		ON i.company_id = d.company_id
+	WHERE EXTRACT('YEAR' FROM date_joined) IN ('2019', '2020', '2021')
+	GROUP BY industry
+	ORDER BY num_companies DESC
+	LIMIT 3
+),
+
+yearly_rankings AS(
+	SELECT industry, EXTRACT('YEAR' FROM date_joined) AS year, COUNT(i.company_id) AS num_companies, 
+	ROUND(AVG(valuation) / 1000000000, 2) AS average_valuation_billions
+	FROM industries AS i
+	LEFT JOIN dates as d 
+		ON i.company_id = d.company_id
+	LEFT JOIN funding as f
+		ON i.company_id = f.company_id	
+	WHERE industry IN (
+		SELECT industry 
+		FROM top_companies
+	)
+GROUP BY i.industry, year
+)
+
+SELECT industry, year, num_companies AS num_unicorns, average_valuation_billions
+FROM yearly_rankings
+WHERE year IN ('2019', '2020', '2021')
+ORDER BY num_companies DESC, year
+
